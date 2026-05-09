@@ -28,81 +28,161 @@ RSS Feeds → fetch-news.js → today-news.json
                                   ↓
                           send-email.js (Gmail → you)
                                   ↓
-                          log-analytics.js
+                    log-analytics.js + dashboard.js
 ```
 
-## Setup
+---
 
-### 1. Clone and install
+## Deployment (First-Time Setup)
+
+### Step 1 — Create GitHub repository
 
 ```bash
-git clone https://github.com/Aki-Akilan/ai-blog-automation.git
-cd ai-blog-automation
-npm install
+# On GitHub: create a new repo named "ai-blog-automation" (public or private)
+# Then push this code:
+git remote add origin https://github.com/Aki-Akilan/ai-blog-automation.git
+git branch -M main
+git push -u origin main
 ```
 
-### 2. Configure secrets
+### Step 2 — Add GitHub Secrets
 
-Copy `.env.example` to `.env` and fill in your credentials:
+Go to your repo → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
 
+| Secret Name | Value |
+|-------------|-------|
+| `DEVTO_API_KEY` | Your Dev.to API key |
+| `HASHNODE_TOKEN` | Your Hashnode personal access token |
+| `EMAIL_USER` | `aiinsightsdaily0406@gmail.com` |
+| `EMAIL_APP_PASSWORD` | 16-char Gmail App Password |
+| `GOOGLE_SHEETS_ID` | (optional) Google Sheets ID for analytics |
+
+> Full instructions: [docs/github-secrets-guide.md](docs/github-secrets-guide.md)
+
+**Or use the helper script (requires `gh` CLI):**
 ```bash
-cp .env.example .env
+bash scripts/setup-github-secrets.sh
 ```
 
-Required values:
-| Secret | Where to get it |
-|--------|----------------|
-| `GITHUB_TOKEN` | GitHub → Settings → Developer Settings → PAT |
-| `DEVTO_API_KEY` | dev.to → Settings → Account → API Keys |
-| `HASHNODE_TOKEN` | hashnode.com → Account Settings → Developer |
-| `EMAIL_USER` | Your Gmail address |
-| `EMAIL_APP_PASSWORD` | Google Account → Security → App Passwords |
+### Step 3 — Create Hashnode blog
 
-### 3. Add GitHub Secrets (for Actions)
+Before the first live run, your Hashnode account needs a blog:
+1. Go to [hashnode.com](https://hashnode.com)
+2. Click your avatar → **Create Blog**
+3. Choose a subdomain (e.g. `aiinsightsdaily.hashnode.dev`)
 
-Go to your repo → Settings → Secrets and variables → Actions → New secret:
+### Step 4 — Trigger first manual run
 
-- `DEVTO_API_KEY`
-- `HASHNODE_TOKEN`
-- `EMAIL_USER`
-- `EMAIL_APP_PASSWORD`
+1. Go to your repo → **Actions** tab
+2. Click **Daily Blog Post**
+3. Click **Run workflow** → set `test_mode` to `true` for a dry run
+4. Watch the logs — each of 7 steps should pass
+5. Check email for notification
 
-### 4. Enable GitHub Actions
+### Step 5 — Enable daily automation
 
-The workflow runs automatically at 6 AM IST (00:30 UTC) every day.
+Once the manual test passes, the workflow runs automatically at **6:00 AM IST** (00:30 UTC) every day via cron. No further action needed.
 
-To trigger manually: Actions tab → Daily Blog Post → Run workflow
+---
 
 ## Local Testing
 
 ```bash
+# Install dependencies
+npm install
+
 # Test individual scripts
-npm run fetch-news       # Fetch AI news
-npm run generate-post    # Generate blog post (requires local Ollama)
-npm run optimize-post    # SEO optimize
+npm run fetch-news       # Fetch AI news → data/today-news.json
+npm run generate-post    # Generate post (requires local Ollama)
+npm run optimize-post    # SEO optimize → data/optimized-post.md
 npm run test-apis        # Verify API connections (no posting)
-npm run run-all          # Full pipeline
+npm run run-all          # Full pipeline end-to-end
 
 # Run tests
 npm test
 ```
 
+**Local Ollama (optional):**
+```bash
+brew install ollama
+ollama serve &
+ollama pull mistral
+npm run generate-post
+```
+
+---
+
 ## Monitoring
 
-- **Logs**: Check GitHub Actions run logs
-- **Analytics**: `data/analytics.json`
+- **GitHub Actions logs**: Repo → Actions → latest run
+- **Run summary**: Each run generates a summary in the Actions tab
+- **Analytics file**: `data/analytics.json` (committed after each run)
 - **Dashboard**: Open `data/dashboard.html` in browser
+
+---
+
+## Workflow Options (manual trigger)
+
+| Input | Options | Default |
+|-------|---------|---------|
+| `test_mode` | `true` / `false` | `false` |
+| `prompt_style` | `default` / `tutorial` / `newsSummary` / `seoOptimized` | `default` |
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| Ollama step times out | Increase `timeout-minutes` in workflow YAML |
+| Dev.to 401 error | Regenerate API key at dev.to → Settings |
+| Hashnode "no publication" | Create blog at hashnode.com first |
+| Email auth error | Generate Gmail App Password at myaccount.google.com/apppasswords |
+| No news fetched | RSS feeds may be temporarily down — retry next day |
+
+---
 
 ## Medium (manual)
 
 Medium doesn't have a free API. The daily email contains:
 - Full formatted post content
-- One-click copy button
-- Step-by-step Medium posting guide
+- One-click **Copy to Clipboard** button
+- Step-by-step Medium posting guide (2 minutes)
 
-## Phase Progress
+---
 
-See [PROGRESS.md](PROGRESS.md) for implementation status.
+## File Structure
+
+```
+ai-blog-automation/
+├── .github/workflows/
+│   └── daily-post.yml          # GitHub Actions schedule
+├── scripts/
+│   ├── fetch-news.js           # RSS → today-news.json
+│   ├── generate-post.js        # Ollama → today-post.md
+│   ├── optimize-post.js        # SEO → optimized-post.md + post-meta.json
+│   ├── post-to-devto.js        # Dev.to REST API
+│   ├── post-to-hashnode.js     # Hashnode GraphQL API
+│   ├── post-to-platforms.js    # Master publisher (parallel)
+│   ├── send-email.js           # Gmail notification
+│   ├── log-analytics.js        # analytics.json logger
+│   ├── dashboard.js            # dashboard.html generator
+│   ├── test-apis.js            # dry-run API checker
+│   └── setup-github-secrets.sh # one-time secrets push
+├── config/
+│   ├── feeds.json              # RSS feed sources
+│   └── prompts.json            # AI prompt templates
+├── templates/
+│   └── email-template.html     # Email HTML template
+├── data/                       # Runtime output (gitignored except analytics)
+├── docs/
+│   └── github-secrets-guide.md # Detailed secrets setup
+├── tests/                      # Test files (Phase 6)
+├── .env.example                # Credential template
+└── PROGRESS.md                 # Implementation tracker
+```
+
+---
 
 ## Author
 

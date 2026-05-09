@@ -1,0 +1,134 @@
+name: Daily Blog Post
+
+on:
+  schedule:
+    # 6:00 AM IST = 00:30 UTC
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Run in test mode (draft posts, no publishing)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+      prompt_style:
+        description: 'Blog post style'
+        required: false
+        default: 'default'
+        type: choice
+        options:
+          - default
+          - tutorial
+          - newsSummary
+          - seoOptimized
+
+jobs:
+  post:
+    name: Generate and Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+      HASHNODE_TOKEN: ${{ secrets.HASHNODE_TOKEN }}
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+      GOOGLE_SHEETS_ID: ${{ secrets.GOOGLE_SHEETS_ID }}
+      AUTHOR_NAME: Akilan
+      AUTHOR_TIMEZONE: Asia/Kolkata
+      OLLAMA_API_URL: http://localhost:11434
+      TEST_MODE: ${{ github.event.inputs.test_mode || 'false' }}
+      PROMPT_STYLE: ${{ github.event.inputs.prompt_style || 'default' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Ollama
+        run: |
+          curl -fsSL https://ollama.ai/install.sh | sh
+          echo "Ollama installed"
+
+      - name: Start Ollama and pull mistral
+        run: |
+          ollama serve &
+          echo "Waiting for Ollama to start..."
+          sleep 10
+          ollama pull mistral
+          echo "mistral model ready"
+
+      - name: Step 1 — Fetch AI news
+        run: node scripts/fetch-news.js
+
+      - name: Step 2 — Generate blog post
+        run: node scripts/generate-post.js
+
+      - name: Step 3 — Optimize post for SEO
+        run: node scripts/optimize-post.js
+
+      - name: Step 4 — Publish to platforms
+        run: node scripts/post-to-platforms.js
+
+      - name: Step 5 — Send email notification
+        run: node scripts/send-email.js
+
+      - name: Step 6 — Log analytics
+        run: node scripts/log-analytics.js
+
+      - name: Step 7 — Generate dashboard
+        run: node scripts/dashboard.js
+
+      - name: Commit data files back to repo
+        run: |
+          git config user.name "AI Blog Bot"
+          git config user.email "aiinsightsdaily0406@gmail.com"
+          git add data/analytics.json data/dashboard.html || true
+          git diff --staged --quiet || git commit -m "chore: update analytics [skip ci]"
+          git push || true
+
+      - name: Show summary
+        if: always()
+        run: |
+          echo "## Run Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f data/today-news.json ]; then
+            COUNT=$(node -e "console.log(require('./data/today-news.json').totalItems)")
+            echo "| Fetch News | ✅ $COUNT articles |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Fetch News | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f data/today-post.md ]; then
+            WORDS=$(wc -w < data/today-post.md)
+            echo "| Generate Post | ✅ ~$WORDS words |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Generate Post | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f data/publish-results.json ]; then
+            DEVTO=$(node -e "const r=require('./data/publish-results.json'); console.log(r.devto?.url || 'failed')")
+            HASH=$(node -e "const r=require('./data/publish-results.json'); console.log(r.hashnode?.url || 'failed')")
+            echo "| Dev.to | $DEVTO |" >> $GITHUB_STEP_SUMMARY
+            echo "| Hashnode | $HASH |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Mode: \`$TEST_MODE\` | Style: \`$PROMPT_STYLE\`" >> $GITHUB_STEP_SUMMARY
