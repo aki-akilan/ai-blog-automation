@@ -23,6 +23,7 @@ Add these secrets to your GitHub repository before the first run.
 
 | Secret Name | Value | Purpose |
 |-------------|-------|---------|
+| `SLACK_WEBHOOK_URL` | `https://hooks.slack.com/services/...` | Slack notifications to #aiinsightsdaily |
 | `GOOGLE_SHEETS_ID` | Sheet ID from URL | Analytics backup to Google Sheets |
 
 > Note: `GITHUB_TOKEN` is auto-provided by GitHub Actions — do NOT add it manually.

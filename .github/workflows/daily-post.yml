@@ -37,6 +37,7 @@ jobs:
       HASHNODE_TOKEN: ${{ secrets.HASHNODE_TOKEN }}
       EMAIL_USER: ${{ secrets.EMAIL_USER }}
       EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       GOOGLE_SHEETS_ID: ${{ secrets.GOOGLE_SHEETS_ID }}
       AUTHOR_NAME: Akilan
       AUTHOR_TIMEZONE: Asia/Kolkata
@@ -58,6 +59,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Notify Slack — automation started
+        run: node -e "require('./scripts/notify-slack').notifyStarted({ style: process.env.PROMPT_STYLE })"
 
       - name: Install Ollama
         run: |
@@ -92,6 +96,16 @@ jobs:
 
       - name: Step 7 — Generate dashboard
         run: node scripts/dashboard.js
+
+      - name: Notify Slack — failure alert
+        if: failure()
+        run: |
+          node -e "
+            require('./scripts/notify-slack').notifyError({
+              step: 'GitHub Actions',
+              error: 'One or more steps failed. Check the Actions log for details.'
+            })
+          "
 
       - name: Commit data files back to repo
         run: |

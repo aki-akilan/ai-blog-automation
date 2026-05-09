@@ -5,6 +5,7 @@ const chalk = require('chalk');
 
 const { main: postToDevTo } = require('./post-to-devto');
 const { main: postToHashnode } = require('./post-to-hashnode');
+const { notifyPublished, notifyError } = require('./notify-slack');
 
 async function main() {
   console.log(chalk.bold.magenta('\n🚀 Publishing to All Platforms...\n'));
@@ -48,13 +49,28 @@ async function main() {
 
   console.log(chalk.bold(`\n  Result: ${successCount}/${total} platforms succeeded`));
 
+  // Slack notification
+  const meta = (() => {
+    try { return JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../data/post-meta.json'), 'utf8')); } catch { return {}; }
+  })();
+
   if (successCount === 0) {
+    await notifyError({ step: 'post-to-platforms', error: results.errors.map(e => e.error).join('; ') });
     console.log(chalk.red('\n❌ All platforms failed. Check credentials and network.'));
     process.exit(1);
-  } else if (successCount < total) {
-    console.log(chalk.yellow(`\n⚠️  Partial success (${successCount}/${total}). Check publish-results.json for details.`));
   } else {
-    console.log(chalk.bold.green('\n✅ Published to all platforms successfully!\n'));
+    await notifyPublished({
+      title: meta.title || 'New Post',
+      devtoUrl: results.devto?.url || null,
+      hashnodeUrl: results.hashnode?.url || null,
+      wordCount: null,
+      tags: meta.tags || []
+    });
+    if (successCount < total) {
+      console.log(chalk.yellow(`\n⚠️  Partial success (${successCount}/${total}). Check publish-results.json for details.`));
+    } else {
+      console.log(chalk.bold.green('\n✅ Published to all platforms successfully!\n'));
+    }
   }
 
   return results;
