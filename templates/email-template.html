@@ -44,15 +44,27 @@
     /* Medium section */
     .medium-section { background: #f8f9ff; border-radius: 10px; padding: 28px; margin-bottom: 32px; }
     .medium-section h2 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
-    .medium-section p { font-size: 14px; color: #555; margin-bottom: 16px; line-height: 1.6; }
-    .copy-btn { display: inline-block; background: #00ab6c; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; margin-bottom: 20px; }
-    .copy-btn:hover { background: #008f5a; }
+    .medium-section p { font-size: 14px; color: #555; margin-bottom: 20px; line-height: 1.6; }
 
-    /* Medium guide */
-    .medium-guide { background: white; border-radius: 8px; padding: 20px; border: 1px solid #e8e8e8; margin-bottom: 20px; }
-    .medium-guide h4 { font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
-    .medium-guide ol { padding-left: 20px; }
-    .medium-guide li { font-size: 13px; color: #444; line-height: 1.8; }
+    /* Steps */
+    .medium-steps { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+    .step { display: flex; gap: 14px; align-items: flex-start; background: white; border-radius: 8px; padding: 16px; border: 1px solid #e8e8e8; }
+    .step-num { background: #667eea; color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+    .step-body { font-size: 14px; color: #333; line-height: 1.6; flex: 1; }
+    .step-body strong { display: block; margin-bottom: 6px; }
+
+    /* Dev.to URL copy box */
+    .devto-url-box { display: flex; align-items: center; gap: 8px; background: #f4f6f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px 12px; margin-top: 6px; }
+    #devto-url-text { font-family: monospace; font-size: 12px; color: #444; flex: 1; word-break: break-all; }
+    .copy-url-btn { background: #667eea; color: white; border: none; padding: 6px 14px; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .copy-url-btn:hover { background: #5a6fd6; }
+
+    /* Import button */
+    .import-btn { display: inline-block; background: #00ab6c; color: white; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; margin-top: 6px; }
+    .import-btn:hover { background: #008f5a; }
+
+    /* Tip */
+    .medium-tip { background: #fff8e1; border-left: 4px solid #ffc107; border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13px; color: #555; }
 
     /* Post content */
     .content-section { margin-bottom: 32px; }
@@ -131,30 +143,47 @@
 
       <hr class="divider">
 
-      <!-- Medium copy section -->
+      <!-- Medium import section -->
       <div class="medium-section">
-        <h2>📋 Copy to Medium</h2>
-        <p>Medium doesn't have a free API, so paste the content below manually. It takes less than 2 minutes.</p>
+        <h2>⚡ Post to Medium (30 seconds)</h2>
+        <p>Medium auto-imports your full article from the Dev.to URL — no copy-paste needed.</p>
 
-        <button class="copy-btn" onclick="copyContent()">📋 Copy Full Post</button>
-
-        <div class="medium-guide">
-          <h4>How to post to Medium (2 min)</h4>
-          <ol>
-            <li>Click "Copy Full Post" above</li>
-            <li>Go to <strong>medium.com/new-story</strong></li>
-            <li>Paste (Cmd+V / Ctrl+V) — Medium auto-formats markdown</li>
-            <li>Add the tags: <strong>{{TAG_LIST}}</strong></li>
-            <li>Click <strong>Publish</strong></li>
-          </ol>
+        <!-- Step guide -->
+        <div class="medium-steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>Copy your Dev.to URL</strong>
+              <div class="devto-url-box">
+                <span id="devto-url-text">{{DEVTO_POST_URL}}</span>
+                <button class="copy-url-btn" onclick="copyDevToUrl()">Copy</button>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>Open Medium Importer</strong><br>
+              <a href="https://medium.com/p/import" class="import-btn" target="_blank">Open medium.com/p/import →</a>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>Paste URL → click Import → click Publish</strong><br>
+              <span style="font-size:13px;color:#888">Medium pulls title, content and formatting automatically.</span>
+            </div>
+          </div>
         </div>
 
-        <div id="post-content-raw" style="display:none">{{POST_CONTENT_RAW}}</div>
+        <div class="medium-tip">
+          💡 <strong>Tip:</strong> Set canonical URL to the Dev.to link to avoid SEO duplicate content penalties.
+        </div>
       </div>
 
-      <!-- Full post content -->
+      <!-- Full post content (backup reference) -->
       <div class="content-section">
-        <h2>Full Post Content</h2>
+        <h2>Full Post Content <span style="font-size:13px;font-weight:400;color:#aaa">(backup reference)</span></h2>
         <div class="content-box" id="post-content-display">{{POST_CONTENT_DISPLAY}}</div>
       </div>
 
@@ -173,19 +202,18 @@
   </div>
 
   <script>
-    function copyContent() {
-      const content = document.getElementById('post-content-raw').innerText;
-      navigator.clipboard.writeText(content).then(() => {
-        const btn = document.querySelector('.copy-btn');
+    function copyDevToUrl() {
+      const url = document.getElementById('devto-url-text').innerText.trim();
+      const btn = document.querySelector('.copy-url-btn');
+      navigator.clipboard.writeText(url).then(() => {
         btn.textContent = '✅ Copied!';
         btn.style.background = '#2e7d32';
         setTimeout(() => {
-          btn.textContent = '📋 Copy Full Post';
-          btn.style.background = '#00ab6c';
-        }, 2500);
+          btn.textContent = 'Copy';
+          btn.style.background = '#667eea';
+        }, 2000);
       }).catch(() => {
-        // Fallback: select the text
-        const el = document.getElementById('post-content-display');
+        const el = document.getElementById('devto-url-text');
         const range = document.createRange();
         range.selectNodeContents(el);
         window.getSelection().removeAllRanges();

@@ -86,6 +86,9 @@ function buildHtml(meta, postContent, publishResults, analytics) {
   // Estimated earnings (rough: $0.10-0.30 per 1000 views, assume 100-500 views/post)
   const estEarnings = (totalPosts * 0.05).toFixed(2);
 
+  // Dev.to URL for Medium import
+  const devtoPostUrl = publishResults?.devto?.url || 'https://dev.to/AIInsightsDaily';
+
   // Escape HTML for display
   const displayContent = postContent
     .replace(/&/g, '&amp;')
@@ -106,6 +109,7 @@ function buildHtml(meta, postContent, publishResults, analytics) {
     .replace(/{{TOTAL_POSTS}}/g, totalPosts)
     .replace(/{{PLATFORMS_OK}}/g, platformsOk)
     .replace(/{{ESTIMATED_EARNINGS}}/g, estEarnings)
+    .replace(/{{DEVTO_POST_URL}}/g, devtoPostUrl)
     .replace(/{{POST_CONTENT_RAW}}/g, postContent)
     .replace(/{{POST_CONTENT_DISPLAY}}/g, displayContent);
 

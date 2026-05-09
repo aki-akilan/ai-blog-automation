@@ -48,28 +48,40 @@ async function notifyPublished({ title, devtoUrl, hashnodeUrl, wordCount, tags }
     ? `<${hashnodeUrl}|View on Hashnode>`
     : '_Not published_';
 
-  await send({
-    blocks: [
-      {
-        type: 'header',
-        text: { type: 'plain_text', text: '✅ Post Published!', emoji: true }
-      },
-      {
-        type: 'section',
-        text: { type: 'mrkdwn', text: `*${title}*` }
-      },
-      {
-        type: 'section',
-        fields: [
-          { type: 'mrkdwn', text: `*📄 Dev.to:*\n${devtoField}` },
-          { type: 'mrkdwn', text: `*🔗 Hashnode:*\n${hashnodeField}` },
-          { type: 'mrkdwn', text: `*📝 Words:*\n~${wordCount || '?'}` },
-          { type: 'mrkdwn', text: `*🏷️ Tags:*\n${(tags || []).slice(0, 3).join(', ')}` }
-        ]
-      },
-      { type: 'divider' }
-    ]
-  });
+  const blocks = [
+    {
+      type: 'header',
+      text: { type: 'plain_text', text: '✅ Post Published!', emoji: true }
+    },
+    {
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*${title}*` }
+    },
+    {
+      type: 'section',
+      fields: [
+        { type: 'mrkdwn', text: `*📄 Dev.to:*\n${devtoField}` },
+        { type: 'mrkdwn', text: `*🔗 Hashnode:*\n${hashnodeField}` },
+        { type: 'mrkdwn', text: `*📝 Words:*\n~${wordCount || '?'}` },
+        { type: 'mrkdwn', text: `*🏷️ Tags:*\n${(tags || []).slice(0, 3).join(', ')}` }
+      ]
+    },
+    { type: 'divider' }
+  ];
+
+  // Medium import block — only show if Dev.to published (need URL to import from)
+  if (devtoUrl) {
+    blocks.push({
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `*⚡ Post to Medium (30 sec)*\n1. Copy URL: \`${devtoUrl}\`\n2. Open <https://medium.com/p/import|medium.com/p/import>\n3. Paste URL → Import → Publish`
+      }
+    });
+    blocks.push({ type: 'divider' });
+  }
+
+  await send({ blocks });
 }
 
 async function notifyEmailSent({ to, title }) {
