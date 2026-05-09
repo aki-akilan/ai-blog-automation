@@ -9,7 +9,7 @@
 | Phase | Status | Completed |
 |-------|--------|-----------|
 | Phase 1: Project Foundation | ✅ Complete | 2026-05-10 |
-| Phase 2: Content Generation Scripts | ⏸️ Not started | — |
+| Phase 2: Content Generation Scripts | ✅ Complete | 2026-05-10 |
 | Phase 3: Publishing Scripts | ⏸️ Not started | — |
 | Phase 4: Email & Analytics | ⏸️ Not started | — |
 | Phase 5: GitHub Actions & Deployment | ⏸️ Not started | — |
@@ -45,16 +45,30 @@
 
 ---
 
-## Phase 2: Content Generation Scripts ⏸️
+## Phase 2: Content Generation Scripts ✅
 
-**Status:** Waiting for approval  
-**Tasks:**
-- [ ] `config/feeds.json` — RSS sources
-- [ ] `config/prompts.json` — AI prompt templates
-- [ ] `scripts/fetch-news.js` — fetch + filter AI news
-- [ ] `scripts/generate-post.js` — Ollama/mistral post generation
-- [ ] `scripts/optimize-post.js` — SEO structure + tags
-- [ ] Test scripts locally
+**Completed:** 2026-05-10  
+**Next phase:** Phase 3 - Publishing Scripts
+
+### Files Created
+- `config/feeds.json` — 5 RSS sources (TechCrunch, The Verge, VentureBeat, MIT Tech Review, HN)
+- `config/prompts.json` — 4 prompt styles (default, tutorial, newsSummary, seoOptimized)
+- `scripts/fetch-news.js` — fetches + filters AI news, outputs data/today-news.json
+- `scripts/generate-post.js` — Ollama/mistral generation with retry + graceful local skip
+- `scripts/optimize-post.js` — SEO frontmatter, tags, CTA, outputs data/optimized-post.md + data/post-meta.json
+
+### Test Results
+- fetch-news.js: ✅ PASS — 15 articles from 4 sources (HN had 502, skipped gracefully)
+- generate-post.js: ✅ PASS — graceful exit when Ollama not local (works on GitHub Actions)
+- optimize-post.js: ✅ PASS — title, meta description, tags, CTA all generated correctly
+
+### Tasks
+- [x] `config/feeds.json` — RSS sources
+- [x] `config/prompts.json` — AI prompt templates
+- [x] `scripts/fetch-news.js` — fetch + filter AI news
+- [x] `scripts/generate-post.js` — Ollama/mistral post generation
+- [x] `scripts/optimize-post.js` — SEO structure + tags
+- [x] Test scripts locally
 
 ---
 

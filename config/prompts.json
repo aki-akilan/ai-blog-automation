@@ -1,0 +1,30 @@
+{
+  "default": {
+    "name": "Default Blog Post",
+    "systemPrompt": "You are an expert AI technology blogger who writes engaging, informative articles for developers and tech enthusiasts. Your writing is clear, insightful, and accessible. You always structure posts with proper markdown headings.",
+    "userPrompt": "Based on the following AI news items from today, write a comprehensive blog post of 800-1000 words.\n\nRequirements:\n- Start with a compelling H1 title\n- Include an engaging introduction (2-3 sentences)\n- Use H2 and H3 subheadings to organize sections\n- Cover 3-4 key themes or stories from the news\n- Include practical insights or takeaways for readers\n- End with a forward-looking conclusion\n- Write in a conversational but professional tone\n- Use markdown formatting throughout\n\nToday's AI news:\n{{NEWS_ITEMS}}\n\nWrite the full blog post now:",
+    "model": "mistral",
+    "maxTokens": 2000
+  },
+  "tutorial": {
+    "name": "Tutorial Style",
+    "systemPrompt": "You are a technical educator who specializes in making complex AI concepts easy to understand. You write step-by-step tutorials and explainers.",
+    "userPrompt": "Based on the following AI news items, write a tutorial-style blog post of 800-1000 words that teaches readers something practical.\n\nRequirements:\n- H1 title starting with 'How to' or 'A Guide to'\n- Clear numbered steps or sections\n- Code examples or practical tips where relevant\n- Beginner-friendly explanations\n- Actionable takeaways\n\nToday's AI news:\n{{NEWS_ITEMS}}\n\nWrite the tutorial post now:",
+    "model": "mistral",
+    "maxTokens": 2000
+  },
+  "newsSummary": {
+    "name": "News Summary Roundup",
+    "systemPrompt": "You are an AI news curator who writes concise, insightful weekly roundups of the most important AI developments.",
+    "userPrompt": "Write an AI news roundup blog post of 800-1000 words based on these stories.\n\nRequirements:\n- H1 title like 'This Week in AI: [Key Theme]'\n- Brief intro summarizing the week's theme\n- Each story as its own H2 section with 2-3 paragraph analysis\n- 'What This Means' subsection for each story\n- Closing section with overall trends\n\nToday's AI news:\n{{NEWS_ITEMS}}\n\nWrite the roundup now:",
+    "model": "mistral",
+    "maxTokens": 2000
+  },
+  "seoOptimized": {
+    "name": "SEO Optimized",
+    "systemPrompt": "You are an SEO-savvy AI content writer. You naturally weave in keywords while keeping content readable and valuable.",
+    "userPrompt": "Write an SEO-optimized blog post of 800-1000 words about today's AI developments.\n\nRequirements:\n- Keyword-rich H1 title (include 'AI', 'artificial intelligence', or relevant tech term)\n- Meta-description friendly opening paragraph\n- Use target keywords naturally: artificial intelligence, machine learning, AI tools\n- H2 and H3 headings with keywords\n- Internal structure that flows logically\n- Strong conclusion with clear value proposition\n\nToday's AI news:\n{{NEWS_ITEMS}}\n\nWrite the SEO-optimized post now:",
+    "model": "mistral",
+    "maxTokens": 2000
+  }
+}

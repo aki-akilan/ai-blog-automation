@@ -1,0 +1,41 @@
+{
+  "feeds": [
+    {
+      "name": "TechCrunch AI",
+      "url": "https://techcrunch.com/category/artificial-intelligence/feed/",
+      "category": "tech"
+    },
+    {
+      "name": "The Verge AI",
+      "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+      "category": "tech"
+    },
+    {
+      "name": "VentureBeat AI",
+      "url": "https://venturebeat.com/category/ai/feed/",
+      "category": "tech"
+    },
+    {
+      "name": "MIT Technology Review AI",
+      "url": "https://www.technologyreview.com/feed/",
+      "category": "research"
+    },
+    {
+      "name": "Hacker News",
+      "url": "https://hnrss.org/newest?q=AI+OR+LLM+OR+machine+learning+OR+GPT&count=20",
+      "category": "community"
+    }
+  ],
+  "aiKeywords": [
+    "artificial intelligence", "machine learning", "deep learning",
+    "large language model", "LLM", "GPT", "ChatGPT", "Claude", "Gemini",
+    "neural network", "AI model", "generative AI", "computer vision",
+    "natural language processing", "NLP", "reinforcement learning",
+    "transformer", "diffusion model", "AI agent", "automation",
+    "OpenAI", "Anthropic", "Google DeepMind", "Meta AI", "Mistral",
+    "AI startup", "AI tool", "AI assistant", "AI safety"
+  ],
+  "maxItemsPerFeed": 5,
+  "maxTotalItems": 15,
+  "timeoutMs": 10000
+}
