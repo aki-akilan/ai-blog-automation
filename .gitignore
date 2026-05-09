@@ -1,0 +1,23 @@
+# Secrets - NEVER commit
+.env
+*.local
+
+# Dependencies
+node_modules/
+
+# Runtime data
+data/errors.log
+data/today-news.json
+data/today-post.md
+data/optimized-post.md
+data/devto-result.json
+data/hashnode-result.json
+data/publish-results.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

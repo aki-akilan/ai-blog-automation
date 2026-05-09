@@ -1,0 +1,34 @@
+{
+  "name": "ai-blog-automation",
+  "version": "1.0.0",
+  "description": "Automated AI blog posting system - publishes daily to Dev.to, Hashnode, with email notification for Medium",
+  "main": "index.js",
+  "scripts": {
+    "fetch-news": "node scripts/fetch-news.js",
+    "generate-post": "node scripts/generate-post.js",
+    "optimize-post": "node scripts/optimize-post.js",
+    "post": "node scripts/post-to-platforms.js",
+    "send-email": "node scripts/send-email.js",
+    "analytics": "node scripts/log-analytics.js",
+    "dashboard": "node scripts/dashboard.js",
+    "test-apis": "node scripts/test-apis.js",
+    "run-all": "npm run fetch-news && npm run generate-post && npm run optimize-post && npm run post && npm run send-email && npm run analytics",
+    "test": "jest --testPathPattern=tests/"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0-rc.12",
+    "chalk": "^4.1.2",
+    "dotenv": "^16.4.5",
+    "nodemailer": "^6.9.14",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Akilan",
+  "license": "MIT"
+}
