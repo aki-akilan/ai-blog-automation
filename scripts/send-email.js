@@ -182,7 +182,7 @@ async function main() {
 
   console.log(chalk.gray(`  From/To: ${process.env.EMAIL_USER}`));
 
-  const { meta } = loadData();
+  const { meta, postContent } = loadData();
   const result = await sendEmail();
 
   console.log(chalk.bold.green(`\n✅ Email sent successfully!`));

@@ -27,10 +27,17 @@ function cleanSummary(html) {
     .slice(0, 500);
 }
 
+function withTimeout(promise, ms, label) {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
+
 async function fetchFeed(feed) {
   try {
     console.log(chalk.blue(`  Fetching: ${feed.name}...`));
-    const result = await parser.parseURL(feed.url);
+    const result = await withTimeout(parser.parseURL(feed.url), feedsConfig.timeoutMs, feed.name);
     const items = result.items
       .filter(item => isAIRelated(item.title) || isAIRelated(item.contentSnippet) || isAIRelated(item.content))
       .slice(0, feedsConfig.maxItemsPerFeed)
