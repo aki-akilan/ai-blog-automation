@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "project": "ai-blog-automation",
+  "owner": "Akilan",
+  "autoUpdate": true,
+  "features": [],
+  "skills": {
+    "location": "./skills",
+    "available": [
+      "content-generation",
+      "platform-posting",
+      "debugging",
+      "deployment",
+      "testing"
+    ]
+  },
+  "workflows": {
+    "location": "./workflows",
+    "available": [
+      "DAILY_OPERATIONS",
+      "ADD_NEW_PLATFORM",
+      "DEBUG_FAILED_POST",
+      "ADD_NEW_FEATURE",
+      "EMERGENCY_RECOVERY"
+    ]
+  },
+  "decisions": {
+    "location": "./DECISIONS.md",
+    "count": 8,
+    "nextADR": 9
+  },
+  "roadmap": {
+    "location": "./future/ROADMAP.md"
+  },
+  "context": {
+    "schedule": "30 6 * * * (12:00 PM IST)",
+    "platforms": ["devto", "hashnode"],
+    "model": "mistral:latest",
+    "ollamaTimeout": 480000,
+    "rssTimeout": 10000,
+    "maxNewsItems": 15,
+    "selectedItemsPerRun": 6
+  },
+  "timestamps": {
+    "created": "2026-05-09",
+    "lastUpdated": "2026-05-11",
+    "phases": {
+      "phase1-foundation": "2026-05-10",
+      "phase2-content": "2026-05-10",
+      "phase3-publishing": "2026-05-10",
+      "phase4-email-analytics": "2026-05-10",
+      "phase5-deployment": "2026-05-10",
+      "phase6-testing": "2026-05-10"
+    }
+  }
+}
