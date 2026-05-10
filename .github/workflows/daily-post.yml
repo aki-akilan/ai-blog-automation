@@ -61,7 +61,8 @@ jobs:
         run: npm ci
 
       - name: Notify Slack — automation started
-        run: node -e "require('./scripts/notify-slack').notifyStarted({ style: process.env.PROMPT_STYLE })"
+        run: |
+          node -e "require('./scripts/notify-slack').notifyStarted({ style: process.env.PROMPT_STYLE })"
 
       - name: Install Ollama
         run: |
