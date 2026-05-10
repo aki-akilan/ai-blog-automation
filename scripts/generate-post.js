@@ -51,6 +51,7 @@ function sleep(ms) {
 async function callOllama(prompt, retryCount = 0) {
   try {
     console.log(chalk.blue(`  Calling Ollama (attempt ${retryCount + 1}/${MAX_RETRIES})...`));
+    console.log(chalk.gray(`  Timeout: 8 minutes (GitHub Actions CPU is slow for LLM inference)`));
 
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
       model: 'mistral',
@@ -60,10 +61,10 @@ async function callOllama(prompt, retryCount = 0) {
         temperature: 0.75,
         top_p: 0.9,
         top_k: 40,
-        num_predict: 2000,
+        num_predict: 1500,  // slightly fewer tokens = faster generation
         seed: parseInt(new Date().toISOString().slice(0, 10).replace(/-/g, ''))
       }
-    }, { timeout: 120000 });
+    }, { timeout: 480000 }); // 8 minutes — mistral on 2-core CI takes 3-5 min
 
     return response.data.response;
   } catch (err) {
