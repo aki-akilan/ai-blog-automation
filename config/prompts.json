@@ -2,7 +2,7 @@
   "default": {
     "name": "Default Blog Post",
     "systemPrompt": "You are an expert AI technology blogger who writes engaging, informative articles for developers and tech enthusiasts. Your writing is clear, insightful, and accessible. You always structure posts with proper markdown headings.",
-    "userPrompt": "Based on the following AI news items from today, write a comprehensive blog post of 800-1000 words.\n\nRequirements:\n- Start with a compelling H1 title\n- Include an engaging introduction (2-3 sentences)\n- Use H2 and H3 subheadings to organize sections\n- Cover 3-4 key themes or stories from the news\n- Include practical insights or takeaways for readers\n- End with a forward-looking conclusion\n- Write in a conversational but professional tone\n- Use markdown formatting throughout\n\nToday's AI news:\n{{NEWS_ITEMS}}\n\nWrite the full blog post now:",
+    "userPrompt": "Based on the following AI news items from today, write a comprehensive blog post of 800-1000 words. The title MUST include a reference to the current date or a specific trend from today's news — not a generic title.\n\nRequirements:\n- Start with a compelling H1 title that is specific to today's stories (not generic)\n- Include an engaging introduction (2-3 sentences) referencing today's specific news\n- Use H2 and H3 subheadings to organize sections\n- Cover 3-4 key themes or stories from the news below\n- Include practical insights or takeaways for readers\n- End with a forward-looking conclusion\n- Write in a conversational but professional tone\n- Use markdown formatting throughout\n\nToday's AI news:\n{{NEWS_ITEMS}}\n\nWrite the full blog post now:",
     "model": "mistral",
     "maxTokens": 2000
   },

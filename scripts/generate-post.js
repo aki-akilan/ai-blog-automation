@@ -11,13 +11,40 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
 const PROMPT_STYLE = process.env.PROMPT_STYLE || 'default';
 
+// Rotates daily so each day gets a different focus angle
+const DAILY_ANGLES = [
+  'Focus on practical implications for developers and engineers.',
+  'Focus on business impact and how companies are adopting this.',
+  'Focus on what this means for everyday users and society.',
+  'Focus on the technical breakthroughs and how they were achieved.',
+  'Focus on future predictions and where this is heading in the next 12 months.',
+  'Focus on controversies, risks, and what critics are saying.',
+  'Focus on startups and new players disrupting the space.',
+];
+
+function getDailyAngle() {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  return DAILY_ANGLES[dayOfYear % DAILY_ANGLES.length];
+}
+
+function shuffleAndPick(items, count) {
+  // Seed shuffle with today's date so it's consistent within a day but different each day
+  const seed = parseInt(new Date().toISOString().slice(0, 10).replace(/-/g, ''));
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = (seed * (i + 1)) % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, count);
+}
+
 function formatNewsItems(items) {
   return items.map((item, i) =>
     `${i + 1}. **${item.title}** (${item.source})\n   ${item.summary}\n   Link: ${item.link}`
   ).join('\n\n');
 }
 
-async function sleep(ms) {
+function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -30,9 +57,11 @@ async function callOllama(prompt, retryCount = 0) {
       prompt,
       stream: false,
       options: {
-        temperature: 0.7,
+        temperature: 0.75,
         top_p: 0.9,
-        num_predict: 2000
+        top_k: 40,
+        num_predict: 2000,
+        seed: parseInt(new Date().toISOString().slice(0, 10).replace(/-/g, ''))
       }
     }, { timeout: 120000 });
 
@@ -71,8 +100,19 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(chalk.gray(`  Using prompt style: ${PROMPT_STYLE}`));
-  console.log(chalk.gray(`  News items: ${newsData.items.length}`));
+  const today = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    timeZone: 'Asia/Kolkata'
+  });
+  const dailyAngle = getDailyAngle();
+
+  // Pick 6 items (shuffled by date seed) so each run focuses on a different subset
+  const selectedItems = shuffleAndPick(newsData.items, Math.min(6, newsData.items.length));
+
+  console.log(chalk.gray(`  Date: ${today}`));
+  console.log(chalk.gray(`  Prompt style: ${PROMPT_STYLE}`));
+  console.log(chalk.gray(`  Selected articles: ${selectedItems.length} of ${newsData.items.length}`));
+  console.log(chalk.gray(`  Angle: ${dailyAngle}`));
   console.log(chalk.gray(`  Ollama URL: ${OLLAMA_URL}\n`));
 
   const ollamaOnline = await checkOllamaHealth();
@@ -85,8 +125,11 @@ async function main() {
   }
 
   const promptConfig = prompts[PROMPT_STYLE] || prompts['default'];
-  const newsText = formatNewsItems(newsData.items);
-  const fullPrompt = `${promptConfig.systemPrompt}\n\n${promptConfig.userPrompt.replace('{{NEWS_ITEMS}}', newsText)}`;
+  const newsText = formatNewsItems(selectedItems);
+
+  // Inject date + unique angle into the prompt for freshness
+  const uniquenessHeader = `Today's date: ${today}\nToday's writing angle: ${dailyAngle}\nIMPORTANT: Write a completely fresh, original post. Do not repeat titles or topics from previous posts.\n\n`;
+  const fullPrompt = `${promptConfig.systemPrompt}\n\n${uniquenessHeader}${promptConfig.userPrompt.replace('{{NEWS_ITEMS}}', newsText)}`;
 
   console.log(chalk.blue('  Generating post with mistral model (this takes ~60-90 seconds)...'));
   const startTime = Date.now();
