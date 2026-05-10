@@ -113,7 +113,7 @@ async function notifyCompleted({ totalPosts, estimatedEarnings, successCount }) 
       {
         type: 'context',
         elements: [
-          { type: 'mrkdwn', text: 'Next run: tomorrow at 6:00 AM IST • _AI Insights Daily_' }
+          { type: 'mrkdwn', text: 'Next run: tomorrow at 12:00 PM IST • _AI Insights Daily_' }
         ]
       }
     ]
@@ -144,6 +144,61 @@ async function notifyError({ step, error }) {
       }
     ]
   });
+}
+
+async function notifyArticleContent(content, meta) {
+  if (!content) return;
+
+  // Convert markdown to Slack mrkdwn
+  const slackText = content
+    .replace(/^---[\s\S]*?---\n/, '')          // strip frontmatter
+    .replace(/^# (.+)$/gm, '*$1*')             // H1 → bold
+    .replace(/^## (.+)$/gm, '\n*$1*')          // H2 → bold with spacing
+    .replace(/^### (.+)$/gm, '_$1_')           // H3 → italic
+    .replace(/\*\*(.+?)\*\*/g, '*$1*')         // **bold** → *bold*
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<$2|$1>') // [text](url) → Slack link
+    .replace(/`(.+?)`/g, '`$1`')               // keep inline code
+    .trim();
+
+  // Slack section blocks max 3000 chars — split by paragraph into chunks
+  const CHUNK_SIZE = 2800;
+  const paragraphs = slackText.split(/\n{2,}/);
+  const chunks = [];
+  let current = '';
+
+  for (const para of paragraphs) {
+    if ((current + '\n\n' + para).length > CHUNK_SIZE) {
+      if (current) chunks.push(current.trim());
+      current = para;
+    } else {
+      current = current ? current + '\n\n' + para : para;
+    }
+  }
+  if (current.trim()) chunks.push(current.trim());
+
+  // First message: header + first chunk
+  const firstBlocks = [
+    {
+      type: 'header',
+      text: { type: 'plain_text', text: '📄 Today\'s Full Article', emoji: true }
+    },
+    {
+      type: 'context',
+      elements: [{ type: 'mrkdwn', text: `*${meta?.title || 'AI Insights Daily'}* · ${meta?.tags?.slice(0,3).join(', ') || ''}` }]
+    },
+    { type: 'divider' },
+    { type: 'section', text: { type: 'mrkdwn', text: chunks[0] || '_No content_' } }
+  ];
+  await send({ blocks: firstBlocks });
+
+  // Remaining chunks as follow-up messages
+  for (let i = 1; i < chunks.length; i++) {
+    await send({
+      blocks: [
+        { type: 'section', text: { type: 'mrkdwn', text: chunks[i] } }
+      ]
+    });
+  }
 }
 
 function getISTTime() {
@@ -179,6 +234,17 @@ async function runTest() {
   await notifyCompleted({ totalPosts: 1, estimatedEarnings: '0.05', successCount: 1 });
   console.log(chalk.green('  ✓ Completed notification sent'));
 
+  // Test article content notification with sample post
+  const fs = require('fs');
+  const path = require('path');
+  const postPath = path.join(__dirname, '../data/optimized-post.md');
+  const meta = { title: '[TEST] The AI Revolution: Key Developments Today', tags: ['ai', 'machinelearning'] };
+  if (fs.existsSync(postPath)) {
+    const content = fs.readFileSync(postPath, 'utf8');
+    await notifyArticleContent(content, meta);
+    console.log(chalk.green('  ✓ Full article notification sent'));
+  }
+
   console.log(chalk.bold.green('\n✅ Check #aiinsightsdaily in Slack!\n'));
 }
 
@@ -189,4 +255,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { notifyStarted, notifyPublished, notifyEmailSent, notifyCompleted, notifyError };
+module.exports = { notifyStarted, notifyPublished, notifyEmailSent, notifyCompleted, notifyError, notifyArticleContent };

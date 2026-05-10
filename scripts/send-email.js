@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
-const { notifyEmailSent } = require('./notify-slack');
+const { notifyEmailSent, notifyArticleContent } = require('./notify-slack');
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
@@ -189,6 +189,7 @@ async function main() {
   console.log(chalk.gray(`   Message ID: ${result.messageId}\n`));
 
   await notifyEmailSent({ to: process.env.EMAIL_USER, title: meta.title });
+  await notifyArticleContent(postContent, meta);
 
   return result;
 }
