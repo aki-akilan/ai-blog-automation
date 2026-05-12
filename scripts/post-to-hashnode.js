@@ -8,6 +8,27 @@ const HASHNODE_API_URL = 'https://gql.hashnode.com/';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
 
+// Hashnode requires properly hyphenated tag slugs — map from optimize-post.js format
+const TAG_MAP = {
+  'ai':                   { slug: 'ai',                    name: 'AI' },
+  'artificialintelligence':{ slug: 'artificial-intelligence', name: 'Artificial Intelligence' },
+  'machinelearning':      { slug: 'machine-learning',      name: 'Machine Learning' },
+  'deeplearning':         { slug: 'deep-learning',         name: 'Deep Learning' },
+  'llm':                  { slug: 'llm',                   name: 'LLM' },
+  'generativeai':         { slug: 'generative-ai',         name: 'Generative AI' },
+  'technology':           { slug: 'technology',            name: 'Technology' },
+  'programming':          { slug: 'programming',           name: 'Programming' },
+  'datascience':          { slug: 'data-science',          name: 'Data Science' },
+  'automation':           { slug: 'automation',            name: 'Automation' },
+  'tutorial':             { slug: 'tutorial',              name: 'Tutorial' },
+  'webdev':               { slug: 'webdev',                name: 'Web Development' },
+  'productivity':         { slug: 'productivity',          name: 'Productivity' }
+};
+
+function mapTags(tags) {
+  return tags.slice(0, 5).map(t => TAG_MAP[t] || { slug: t, name: t });
+}
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -34,51 +55,82 @@ function loadPostData() {
   return { bodyMarkdown, meta };
 }
 
-async function getPublicationId(retryCount = 0) {
-  const query = `
-    query {
-      me {
-        publications(first: 1) {
-          edges {
-            node {
-              id
-              title
-            }
-          }
-        }
-      }
-    }
-  `;
-
+async function gql(query, variables, retryCount = 0) {
   try {
-    const response = await axios.post(HASHNODE_API_URL, { query }, {
+    const response = await axios.post(HASHNODE_API_URL, { query, variables }, {
       headers: {
         'Authorization': process.env.HASHNODE_TOKEN,
         'Content-Type': 'application/json'
       },
-      timeout: 15000
+      timeout: 30000
     });
 
-    const edges = response.data?.data?.me?.publications?.edges;
-    if (!edges || edges.length === 0) throw new Error('No Hashnode publication found for this token.');
-
-    return edges[0].node.id;
-  } catch (err) {
-    if (retryCount < MAX_RETRIES - 1) {
-      await sleep(RETRY_DELAY_MS);
-      return getPublicationId(retryCount + 1);
+    const errors = response.data?.errors;
+    if (errors && errors.length > 0) {
+      throw new Error(`GraphQL: ${errors.map(e => e.message).join('; ')}`);
     }
-    throw new Error(`Failed to get Hashnode publication ID: ${err.message}`);
+
+    return response.data?.data;
+  } catch (err) {
+    if (err.response?.status === 401) {
+      throw new Error('Hashnode auth failed (401) — HASHNODE_TOKEN is invalid or expired. Regenerate at hashnode.com → Settings → Developer.');
+    }
+    if (retryCount < MAX_RETRIES - 1) {
+      console.log(chalk.yellow(`  ⚠ Hashnode error: ${err.message}. Retrying in ${RETRY_DELAY_MS / 1000}s...`));
+      await sleep(RETRY_DELAY_MS);
+      return gql(query, variables, retryCount + 1);
+    }
+    throw err;
   }
 }
 
-async function postToHashnode(bodyMarkdown, meta, publicationId, retryCount = 0) {
-  const isTestMode = process.env.TEST_MODE === 'true';
-  const title = isTestMode ? `[TEST] ${meta.title}` : meta.title;
+async function getPublicationId() {
+  const data = await gql(`
+    query {
+      me {
+        publications(first: 1) {
+          edges {
+            node { id title }
+          }
+        }
+      }
+    }
+  `, {});
 
-  const mutation = `
-    mutation PublishPost($input: PublishPostInput!) {
-      publishPost(input: $input) {
+  const edges = data?.me?.publications?.edges;
+  if (!edges || edges.length === 0) throw new Error('No Hashnode publication found for this token.');
+  return edges[0].node.id;
+}
+
+async function createDraft(title, contentMarkdown, publicationId, tags, metaDescription) {
+  const data = await gql(`
+    mutation CreateDraft($input: CreateDraftInput!) {
+      createDraft(input: $input) {
+        draft {
+          id
+          title
+        }
+      }
+    }
+  `, {
+    input: {
+      title,
+      contentMarkdown,
+      publicationId,
+      tags,
+      metaTags: { description: metaDescription }
+    }
+  });
+
+  const draft = data?.createDraft?.draft;
+  if (!draft) throw new Error('createDraft returned no draft — check token permissions.');
+  return draft;
+}
+
+async function publishDraft(draftId) {
+  const data = await gql(`
+    mutation PublishDraft($input: PublishDraftInput!) {
+      publishDraft(input: $input) {
         post {
           id
           title
@@ -87,66 +139,11 @@ async function postToHashnode(bodyMarkdown, meta, publicationId, retryCount = 0)
         }
       }
     }
-  `;
+  `, { input: { draftId } });
 
-  const variables = {
-    input: {
-      title,
-      contentMarkdown: bodyMarkdown,
-      publicationId,
-      tags: meta.tags.slice(0, 5).map(t => ({ slug: t, name: t })),
-      metaTags: {
-        description: meta.metaDescription
-      },
-      // In test mode, publish as draft
-      ...(isTestMode ? {} : {})
-    }
-  };
-
-  try {
-    console.log(chalk.blue(`  Posting to Hashnode (attempt ${retryCount + 1}/${MAX_RETRIES})...`));
-    if (isTestMode) console.log(chalk.yellow('  [TEST MODE] Publishing as draft'));
-
-    const response = await axios.post(HASHNODE_API_URL,
-      { query: mutation, variables },
-      {
-        headers: {
-          'Authorization': process.env.HASHNODE_TOKEN,
-          'Content-Type': 'application/json'
-        },
-        timeout: 30000
-      }
-    );
-
-    const errors = response.data?.errors;
-    if (errors && errors.length > 0) {
-      const msg = errors.map(e => e.message).join('; ');
-      throw new Error(`Hashnode GraphQL error: ${msg}`);
-    }
-
-    const post = response.data?.data?.publishPost?.post;
-    if (!post) throw new Error('Hashnode returned no post data.');
-
-    return {
-      success: true,
-      id: post.id,
-      url: post.url,
-      title: post.title,
-      publishedAt: post.publishedAt
-    };
-  } catch (err) {
-    if (err.response?.status === 401) {
-      throw new Error('Hashnode auth failed (401): Invalid HASHNODE_TOKEN.');
-    }
-
-    if (retryCount < MAX_RETRIES - 1) {
-      console.log(chalk.yellow(`  ⚠ Hashnode error: ${err.message}. Retrying in ${RETRY_DELAY_MS / 1000}s...`));
-      await sleep(RETRY_DELAY_MS);
-      return postToHashnode(bodyMarkdown, meta, publicationId, retryCount + 1);
-    }
-
-    throw new Error(`Hashnode post failed after ${MAX_RETRIES} attempts: ${err.message}`);
-  }
+  const post = data?.publishDraft?.post;
+  if (!post) throw new Error('publishDraft returned no post — draft may have already been published or deleted.');
+  return post;
 }
 
 async function main() {
@@ -157,20 +154,50 @@ async function main() {
     process.exit(1);
   }
 
+  const isTestMode = process.env.TEST_MODE === 'true';
   const { bodyMarkdown, meta } = loadPostData();
-  console.log(chalk.gray(`  Title: ${meta.title}`));
-  console.log(chalk.gray(`  Tags: ${meta.tags.join(', ')}\n`));
+  const title = isTestMode ? `[TEST] ${meta.title}` : meta.title;
+  const tags = mapTags(meta.tags);
+
+  console.log(chalk.gray(`  Title: ${title}`));
+  console.log(chalk.gray(`  Tags: ${tags.map(t => t.slug).join(', ')}\n`));
+  if (isTestMode) console.log(chalk.yellow('  [TEST MODE] Will create draft only — not published publicly\n'));
 
   console.log(chalk.blue('  Fetching Hashnode publication ID...'));
   const publicationId = await getPublicationId();
   console.log(chalk.gray(`  Publication ID: ${publicationId}`));
 
-  const result = await postToHashnode(bodyMarkdown, meta, publicationId);
+  console.log(chalk.blue('  Step 1/2: Creating draft...'));
+  const draft = await createDraft(title, bodyMarkdown, publicationId, tags, meta.metaDescription);
+  console.log(chalk.gray(`  Draft ID: ${draft.id}`));
 
-  const outPath = path.join(__dirname, '../data/hashnode-result.json');
-  fs.writeFileSync(outPath, JSON.stringify({ ...result, postedAt: new Date().toISOString() }, null, 2));
+  if (isTestMode) {
+    console.log(chalk.yellow('\n⚠️  [TEST MODE] Draft created on Hashnode — skipping publish step'));
+    const result = { success: true, id: draft.id, url: null, title: draft.title, publishedAt: null, isDraft: true };
+    fs.writeFileSync(
+      path.join(__dirname, '../data/hashnode-result.json'),
+      JSON.stringify({ ...result, postedAt: new Date().toISOString() }, null, 2)
+    );
+    return result;
+  }
 
-  console.log(chalk.bold.green(`\n✅ Hashnode post published!`));
+  console.log(chalk.blue('  Step 2/2: Publishing draft...'));
+  const post = await publishDraft(draft.id);
+
+  const result = {
+    success: true,
+    id: post.id,
+    url: post.url,
+    title: post.title,
+    publishedAt: post.publishedAt
+  };
+
+  fs.writeFileSync(
+    path.join(__dirname, '../data/hashnode-result.json'),
+    JSON.stringify({ ...result, postedAt: new Date().toISOString() }, null, 2)
+  );
+
+  console.log(chalk.bold.green('\n✅ Hashnode post published!'));
   console.log(chalk.green(`   URL: ${result.url}`));
   console.log(chalk.gray(`   ID: ${result.id}\n`));
 
