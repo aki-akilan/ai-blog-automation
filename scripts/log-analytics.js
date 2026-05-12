@@ -43,6 +43,7 @@ async function main() {
 
   const entry = {
     date: new Date().toISOString(),
+    slot: process.env.POST_SLOT || 'morning',
     title: meta.title,
     tags: meta.tags,
     wordCount: null,
@@ -81,7 +82,7 @@ async function main() {
   fs.writeFileSync(ANALYTICS_PATH, JSON.stringify(analytics, null, 2));
 
   console.log(chalk.green(`  ✓ Entry logged: "${meta.title}"`));
-  console.log(chalk.gray(`  Status: ${entry.status} (${successCount}/2 platforms)`));
+  console.log(chalk.gray(`  Slot: ${entry.slot} | Status: ${entry.status} (${successCount}/2 platforms)`));
   console.log(chalk.gray(`  Total posts so far: ${analytics.totals.posts}`));
   console.log(chalk.gray(`  Est. total earnings: $${analytics.totals.estimatedEarningsUSD}`));
   console.log(chalk.bold.green(`\n✅ Analytics saved to data/analytics.json\n`));

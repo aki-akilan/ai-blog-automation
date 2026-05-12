@@ -2,8 +2,10 @@ name: Daily Blog Post
 
 on:
   schedule:
-    # 12:00 PM IST = 06:30 UTC
-    - cron: '30 6 * * *'
+    # 7:00 AM IST = 01:30 UTC
+    - cron: '30 1 * * *'
+    # 10:00 PM IST = 16:30 UTC
+    - cron: '30 16 * * *'
   workflow_dispatch:
     inputs:
       test_mode:
@@ -24,6 +26,15 @@ on:
           - tutorial
           - newsSummary
           - seoOptimized
+      slot:
+        description: 'Post slot (auto-detected from time if not set)'
+        required: false
+        default: ''
+        type: choice
+        options:
+          - ''
+          - morning
+          - evening
 
 jobs:
   post:
@@ -44,8 +55,22 @@ jobs:
       OLLAMA_API_URL: http://localhost:11434
       TEST_MODE: ${{ github.event.inputs.test_mode || 'false' }}
       PROMPT_STYLE: ${{ github.event.inputs.prompt_style || 'default' }}
+      SLOT_INPUT: ${{ github.event.inputs.slot || '' }}
 
     steps:
+      - name: Detect post slot (morning / evening)
+        run: |
+          if [ -n "$SLOT_INPUT" ]; then
+            echo "POST_SLOT=$SLOT_INPUT" >> $GITHUB_ENV
+          else
+            HOUR=$(date -u +%H)
+            if [ "$HOUR" -lt "10" ]; then
+              echo "POST_SLOT=morning" >> $GITHUB_ENV
+            else
+              echo "POST_SLOT=evening" >> $GITHUB_ENV
+            fi
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -62,7 +87,7 @@ jobs:
 
       - name: Notify Slack — automation started
         run: |
-          node -e "require('./scripts/notify-slack').notifyStarted({ style: process.env.PROMPT_STYLE })"
+          node -e "require('./scripts/notify-slack').notifyStarted({ style: process.env.PROMPT_STYLE, slot: process.env.POST_SLOT })"
 
       - name: Install Ollama
         run: |
@@ -154,4 +179,4 @@ jobs:
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Mode: \`$TEST_MODE\` | Style: \`$PROMPT_STYLE\`" >> $GITHUB_STEP_SUMMARY
+          echo "Mode: \`$TEST_MODE\` | Style: \`$PROMPT_STYLE\` | Slot: \`$POST_SLOT\`" >> $GITHUB_STEP_SUMMARY

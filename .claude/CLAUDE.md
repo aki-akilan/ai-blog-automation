@@ -10,22 +10,25 @@
 |-------|-------|
 | **Project** | AI Blog Automation |
 | **Owner** | Akilan (Chennai, India) |
-| **Goal** | Auto-publish daily AI blog posts to Dev.to + Hashnode at 12 PM IST |
+| **Goal** | Auto-publish 2 AI blog posts/day to Dev.to + Hashnode at 7 AM & 10 PM IST |
 | **Status** | ✅ Production — all 6 phases complete |
 | **Repo** | github.com/Aki-Akilan/ai-blog-automation |
-| **Runtime** | GitHub Actions (ubuntu-latest, cron `30 6 * * *`) |
+| **Runtime** | GitHub Actions (ubuntu-latest, cron `30 1 * * *` + `30 16 * * *`) |
 
 ---
 
 ## What This System Does (30-second summary)
 
-Every day at **12:00 PM IST**:
+**Twice a day** — **7:00 AM IST** (morning slot) and **10:00 PM IST** (evening slot):
 1. Fetches AI news from 5 RSS feeds
 2. Generates 800-1000 word blog post using **Ollama + Mistral 7B**
+   - Morning and evening use different article selections, writing angles, and Ollama seeds so posts never duplicate
 3. Publishes to **Dev.to** and **Hashnode** automatically
 4. Sends **email** to Akilan with Medium import link
 5. Posts **Slack notifications** to `#aiinsightsdaily` (started → published → full article)
-6. Logs analytics, generates dashboard
+6. Logs analytics (with `slot` field), generates dashboard
+
+`POST_SLOT` env var (`morning` / `evening`) is auto-detected from UTC hour in GitHub Actions.
 
 Akilan's only manual task: open the Slack notification → click Medium import link → paste Dev.to URL → publish (~30 sec).
 
@@ -56,6 +59,8 @@ Akilan's only manual task: open the Slack notification → click Medium import l
 6. **TEST_MODE=true** → Dev.to saves as draft, posts get `[TEST]` prefix
 7. **`[skip ci]`** in analytics commit message to prevent workflow loops
 8. **Promise.race timeout** wraps all RSS feed fetches (10s hard cutoff)
+9. **`POST_SLOT`** (`morning` / `evening`) is set by the workflow before any script runs — use it (not time-of-day checks) in scripts to differentiate slots
+10. **Two posts/day** — morning seed and evening seed differ by a constant offset; never use the same Ollama seed for both slots on the same date
 
 ---
 

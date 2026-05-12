@@ -33,7 +33,9 @@
     "location": "./future/ROADMAP.md"
   },
   "context": {
-    "schedule": "30 6 * * * (12:00 PM IST)",
+    "schedule": "30 1 * * * (7:00 AM IST) + 30 16 * * * (10:00 PM IST)",
+    "postsPerDay": 2,
+    "slots": ["morning", "evening"],
     "platforms": ["devto", "hashnode"],
     "model": "mistral:latest",
     "ollamaTimeout": 480000,
@@ -43,7 +45,7 @@
   },
   "timestamps": {
     "created": "2026-05-09",
-    "lastUpdated": "2026-05-11",
+    "lastUpdated": "2026-05-13",
     "phases": {
       "phase1-foundation": "2026-05-10",
       "phase2-content": "2026-05-10",

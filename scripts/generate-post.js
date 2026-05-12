@@ -10,8 +10,9 @@ const OLLAMA_URL = process.env.OLLAMA_API_URL || 'http://localhost:11434';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 5000;
 const PROMPT_STYLE = process.env.PROMPT_STYLE || 'default';
+const POST_SLOT = process.env.POST_SLOT || 'morning'; // morning | evening
 
-// Rotates daily so each day gets a different focus angle
+// Morning and evening slots each get a distinct half of the angles list
 const DAILY_ANGLES = [
   'Focus on practical implications for developers and engineers.',
   'Focus on business impact and how companies are adopting this.',
@@ -24,12 +25,15 @@ const DAILY_ANGLES = [
 
 function getDailyAngle() {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-  return DAILY_ANGLES[dayOfYear % DAILY_ANGLES.length];
+  // Evening offset by half the list length so morning and evening never share the same angle
+  const offset = POST_SLOT === 'evening' ? Math.floor(DAILY_ANGLES.length / 2) : 0;
+  return DAILY_ANGLES[(dayOfYear + offset) % DAILY_ANGLES.length];
 }
 
 function shuffleAndPick(items, count) {
-  // Seed shuffle with today's date so it's consistent within a day but different each day
-  const seed = parseInt(new Date().toISOString().slice(0, 10).replace(/-/g, ''));
+  const dateSeed = parseInt(new Date().toISOString().slice(0, 10).replace(/-/g, ''));
+  // Evening uses a different seed offset so it draws from different articles than morning
+  const seed = POST_SLOT === 'evening' ? dateSeed + 1000000 : dateSeed;
   const arr = [...items];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = (seed * (i + 1)) % (i + 1);
@@ -61,8 +65,8 @@ async function callOllama(prompt, retryCount = 0) {
         temperature: 0.75,
         top_p: 0.9,
         top_k: 40,
-        num_predict: 1500,  // slightly fewer tokens = faster generation
-        seed: parseInt(new Date().toISOString().slice(0, 10).replace(/-/g, ''))
+        num_predict: 1500,
+        seed: parseInt(new Date().toISOString().slice(0, 10).replace(/-/g, '')) + (POST_SLOT === 'evening' ? 1 : 0)
       }
     }, { timeout: 480000 }); // 8 minutes — mistral on 2-core CI takes 3-5 min
 
@@ -111,6 +115,7 @@ async function main() {
   const selectedItems = shuffleAndPick(newsData.items, Math.min(6, newsData.items.length));
 
   console.log(chalk.gray(`  Date: ${today}`));
+  console.log(chalk.gray(`  Slot: ${POST_SLOT}`));
   console.log(chalk.gray(`  Prompt style: ${PROMPT_STYLE}`));
   console.log(chalk.gray(`  Selected articles: ${selectedItems.length} of ${newsData.items.length}`));
   console.log(chalk.gray(`  Angle: ${dailyAngle}`));
@@ -128,8 +133,8 @@ async function main() {
   const promptConfig = prompts[PROMPT_STYLE] || prompts['default'];
   const newsText = formatNewsItems(selectedItems);
 
-  // Inject date + unique angle into the prompt for freshness
-  const uniquenessHeader = `Today's date: ${today}\nToday's writing angle: ${dailyAngle}\nIMPORTANT: Write a completely fresh, original post. Do not repeat titles or topics from previous posts.\n\n`;
+  // Inject date + slot + unique angle into the prompt for freshness
+  const uniquenessHeader = `Today's date: ${today}\nPost slot: ${POST_SLOT} (${POST_SLOT === 'morning' ? '7 AM' : '10 PM'} IST)\nToday's writing angle: ${dailyAngle}\nIMPORTANT: Write a completely fresh, original post. Do not repeat titles or topics from previous posts.\n\n`;
   const fullPrompt = `${promptConfig.systemPrompt}\n\n${uniquenessHeader}${promptConfig.userPrompt.replace('{{NEWS_ITEMS}}', newsText)}`;
 
   console.log(chalk.blue('  Generating post with mistral model (this takes ~60-90 seconds)...'));

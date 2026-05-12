@@ -19,7 +19,8 @@ async function send(payload) {
 
 // ── Notification types ────────────────────────────────────────────────────────
 
-async function notifyStarted({ style = 'default' } = {}) {
+async function notifyStarted({ style = 'default', slot = '' } = {}) {
+  const slotLabel = slot === 'evening' ? '🌙 Evening (10 PM IST)' : '🌅 Morning (7 AM IST)';
   await send({
     blocks: [
       {
@@ -30,9 +31,10 @@ async function notifyStarted({ style = 'default' } = {}) {
         type: 'section',
         fields: [
           { type: 'mrkdwn', text: `*Status:*\nRunning` },
+          { type: 'mrkdwn', text: `*Slot:*\n${slotLabel}` },
           { type: 'mrkdwn', text: `*Style:*\n${style}` },
-          { type: 'mrkdwn', text: `*Time:*\n${getISTTime()}` },
-          { type: 'mrkdwn', text: `*Mode:*\n${process.env.TEST_MODE === 'true' ? 'Test (draft)' : 'Live'}` }
+          { type: 'mrkdwn', text: `*Mode:*\n${process.env.TEST_MODE === 'true' ? 'Test (draft)' : 'Live'}` },
+          { type: 'mrkdwn', text: `*Time:*\n${getISTTime()}` }
         ]
       },
       { type: 'divider' }
@@ -113,7 +115,7 @@ async function notifyCompleted({ totalPosts, estimatedEarnings, successCount }) 
       {
         type: 'context',
         elements: [
-          { type: 'mrkdwn', text: 'Next run: tomorrow at 12:00 PM IST • _AI Insights Daily_' }
+          { type: 'mrkdwn', text: getNextRunText() + ' • _AI Insights Daily_' }
         ]
       }
     ]
@@ -199,6 +201,13 @@ async function notifyArticleContent(content, meta) {
       ]
     });
   }
+}
+
+function getNextRunText() {
+  const slot = process.env.POST_SLOT || 'morning';
+  return slot === 'morning'
+    ? 'Next run: today at 10:00 PM IST'
+    : 'Next run: tomorrow at 7:00 AM IST';
 }
 
 function getISTTime() {
